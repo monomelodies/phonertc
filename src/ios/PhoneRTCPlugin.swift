@@ -24,10 +24,10 @@ class PhoneRTCPlugin : CDVPlugin {
         RTCPeerConnectionFactory.initializeSSL()
     }
     
-    func createSessionObject(command: CDVInvokedUrlCommand) {
-        if let sessionKey = command.argumentAtIndex(0) as? String {
+    func createSessionObject(_ command: CDVInvokedUrlCommand) {
+        if let sessionKey = command.argument(at: 0) as? String {
             // create a session and initialize it.
-            if let args: AnyObject = command.argumentAtIndex(1) {
+            if let args: AnyObject = command.argument(at: 1) as AnyObject {
                 let config = SessionConfig(data: args)
                 let session = Session(plugin: self, peerConnectionFactory: peerConnectionFactory,
                     config: config, callbackId: command.callbackId,
@@ -37,10 +37,10 @@ class PhoneRTCPlugin : CDVPlugin {
         }
     }
     
-    func call(command: CDVInvokedUrlCommand) {
-        let args: AnyObject = command.argumentAtIndex(0)
-        if let sessionKey = args.objectForKey("sessionKey") as? String {
-            dispatch_async(dispatch_get_main_queue()) {
+    func call(_ command: CDVInvokedUrlCommand) {
+        let args: AnyObject = command.argument(at: 0) as AnyObject
+        if let sessionKey = args.object(forKey: "sessionKey") as? String {
+            DispatchQueue.main.async {
                 if let session = self.sessions[sessionKey] {
                     session.call()
                 }
@@ -48,12 +48,12 @@ class PhoneRTCPlugin : CDVPlugin {
         }
     }
     
-    func receiveMessage(command: CDVInvokedUrlCommand) {
-        let args: AnyObject = command.argumentAtIndex(0)
-        if let sessionKey = args.objectForKey("sessionKey") as? String {
-            if let message = args.objectForKey("message") as? String {
+    func receiveMessage(_ command: CDVInvokedUrlCommand) {
+        let args: AnyObject = command.argument(at: 0) as AnyObject
+        if let sessionKey = args.object(forKey: "sessionKey") as? String {
+            if let message = args.object(forKey: "message") as? String {
                 if let session = self.sessions[sessionKey] {
-                    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0)) {
+                    DispatchQueue.global(priority: DispatchQueue.GlobalQueuePriority.default).async {
                         session.receiveMessage(message)
                     }
                 }
@@ -61,11 +61,11 @@ class PhoneRTCPlugin : CDVPlugin {
         }
     }
     
-    func renegotiate(command: CDVInvokedUrlCommand) {
-        let args: AnyObject = command.argumentAtIndex(0)
-        if let sessionKey = args.objectForKey("sessionKey") as? String {
-            if let config: AnyObject = args.objectForKey("config") {
-                dispatch_async(dispatch_get_main_queue()) {
+    func renegotiate(_ command: CDVInvokedUrlCommand) {
+        let args: AnyObject = command.argument(at: 0) as AnyObject
+        if let sessionKey = args.object(forKey: "sessionKey") as? String {
+            if let config: AnyObject = args.object(forKey: "config") {
+                DispatchQueue.main.async {
                     if let session = self.sessions[sessionKey] {
                         session.config = SessionConfig(data: config)
                         session.createOrUpdateStream()
@@ -75,10 +75,10 @@ class PhoneRTCPlugin : CDVPlugin {
         }
     }
     
-    func disconnect(command: CDVInvokedUrlCommand) {
-        let args: AnyObject = command.argumentAtIndex(0)
-        if let sessionKey = args.objectForKey("sessionKey") as? String {
-            dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0)) {
+    func disconnect(_ command: CDVInvokedUrlCommand) {
+        let args: AnyObject = command.argument(at: 0) as AnyObject
+        if let sessionKey = args.object(forKey: "sessionKey") as? String {
+            DispatchQueue.global(priority: DispatchQueue.GlobalQueuePriority.default).async {
                 if (self.sessions[sessionKey] != nil) {
                     self.sessions[sessionKey]!.disconnect(true)
                 }
@@ -86,20 +86,20 @@ class PhoneRTCPlugin : CDVPlugin {
         }
     }
 
-    func sendMessage(callbackId: String, message: NSData) {
-        let json = (try! NSJSONSerialization.JSONObjectWithData(message,
-            options: NSJSONReadingOptions.MutableLeaves)) as! NSDictionary
+    func sendMessage(_ callbackId: String, message: Data) {
+        let json = (try! JSONSerialization.jsonObject(with: message,
+            options: JSONSerialization.ReadingOptions.mutableLeaves)) as! NSDictionary
         
-        let pluginResult = CDVPluginResult(status: CDVCommandStatus_OK, messageAsDictionary: json as [NSObject : AnyObject])
-        pluginResult.setKeepCallbackAsBool(true);
+        let pluginResult = CDVPluginResult(status: CDVCommandStatus_OK, messageAs: json as! [AnyHashable: Any])
+        pluginResult?.setKeepCallbackAs(true);
         
-        self.commandDelegate!.sendPluginResult(pluginResult, callbackId:callbackId)
+        self.commandDelegate!.send(pluginResult, callbackId:callbackId)
     }
     
-    func setVideoView(command: CDVInvokedUrlCommand) {
-        let config: AnyObject = command.argumentAtIndex(0)
+    func setVideoView(_ command: CDVInvokedUrlCommand) {
+        let config: AnyObject = command.argument(at: 0) as AnyObject
         
-        dispatch_async(dispatch_get_main_queue()) {
+        DispatchQueue.main.async {
             // create session config from the JS params
             let videoConfig = VideoConfig(data: config)
             
@@ -111,7 +111,7 @@ class PhoneRTCPlugin : CDVPlugin {
             self.videoConfig = videoConfig
 
             // get cameraParams from the JS params
-            self.camera = config.objectForKey("camera") as? String
+            self.camera = config.object(forKey: "camera") as? String
             
             // add local video view
             if self.videoConfig!.local != nil {
@@ -127,7 +127,7 @@ class PhoneRTCPlugin : CDVPlugin {
                     // remove the local video view if it exists and
                     // the new config doesn't have the `local` property
                     if self.localVideoView != nil {
-                        self.localVideoView!.hidden = true
+                        self.localVideoView!.isHidden = true
                         self.localVideoView!.removeFromSuperview()
                         self.localVideoView = nil
                     }
@@ -137,16 +137,16 @@ class PhoneRTCPlugin : CDVPlugin {
                     // if the local video view already exists, just
                     // change its position according to the new config.
                     if self.localVideoView != nil {
-                        self.localVideoView!.frame = CGRectMake(
-                            CGFloat(params.x + self.videoConfig!.container.x),
-                            CGFloat(params.y + self.videoConfig!.container.y),
-                            CGFloat(params.width),
-                            CGFloat(params.height)
+                        self.localVideoView!.frame = CGRect(
+                            x: CGFloat(params.x + self.videoConfig!.container.x),
+                            y: CGFloat(params.y + self.videoConfig!.container.y),
+                            width: CGFloat(params.width),
+                            height: CGFloat(params.height)
                         )
                     } else {
                         // otherwise, create the local video view
                         self.localVideoView = self.createVideoView(params)
-                        self.localVideoTrack!.addRenderer(self.localVideoView!)
+                        self.localVideoTrack!.add(self.localVideoView!)
                     }
                 }
                 
@@ -155,37 +155,37 @@ class PhoneRTCPlugin : CDVPlugin {
         }
     }
     
-    func hideVideoView(command: CDVInvokedUrlCommand) {
-        dispatch_async(dispatch_get_main_queue()) {
+    func hideVideoView(_ command: CDVInvokedUrlCommand) {
+        DispatchQueue.main.async {
             if (self.localVideoView != nil) {
-                self.localVideoView!.hidden = true;
+                self.localVideoView!.isHidden = true;
             }    
             for remoteVideoView in self.remoteVideoViews {
-                remoteVideoView.videoView.hidden = true;
+                remoteVideoView.videoView.isHidden = true;
             }
         }
     }
     
-    func showVideoView(command: CDVInvokedUrlCommand) {
-        dispatch_async(dispatch_get_main_queue()) {
+    func showVideoView(_ command: CDVInvokedUrlCommand) {
+        DispatchQueue.main.async {
             if (self.localVideoView != nil) {
-                self.localVideoView!.hidden = false;
+                self.localVideoView!.isHidden = false;
             }    
             for remoteVideoView in self.remoteVideoViews {
-                remoteVideoView.videoView.hidden = false;
+                remoteVideoView.videoView.isHidden = false;
             } 
         }
     }
     
-    func createVideoView(params: VideoLayoutParams? = nil) -> RTCEAGLVideoView {
+    func createVideoView(_ params: VideoLayoutParams? = nil) -> RTCEAGLVideoView {
         var view: RTCEAGLVideoView
         
         if params != nil {
-            let frame = CGRectMake(
-                CGFloat(params!.x + self.videoConfig!.container.x),
-                CGFloat(params!.y + self.videoConfig!.container.y),
-                CGFloat(params!.width),
-                CGFloat(params!.height)
+            let frame = CGRect(
+                x: CGFloat(params!.x + self.videoConfig!.container.x),
+                y: CGFloat(params!.y + self.videoConfig!.container.y),
+                width: CGFloat(params!.width),
+                height: CGFloat(params!.height)
             )
             
             view = RTCEAGLVideoView(frame: frame)
@@ -193,65 +193,65 @@ class PhoneRTCPlugin : CDVPlugin {
             view = RTCEAGLVideoView()
         }
         
-        view.userInteractionEnabled = false
+        view.isUserInteractionEnabled = false
         
         self.webView!.addSubview(view)
-        self.webView!.bringSubviewToFront(view)
+        self.webView!.bringSubview(toFront: view)
         
         return view
     }
     
     func initLocalAudioTrack() {
-        localAudioTrack = peerConnectionFactory.audioTrackWithID("ARDAMSa0")
+        localAudioTrack = peerConnectionFactory.audioTrack(withID: "ARDAMSa0")
     }
     
     func initLocalVideoTrack() {
         var cameraID: String?
-        for captureDevice in AVCaptureDevice.devicesWithMediaType(AVMediaTypeVideo) {
+        for captureDevice in AVCaptureDevice.devices(withMediaType: AVMediaTypeVideo) {
             // TODO: Make this camera option configurable
-            if captureDevice.position == AVCaptureDevicePosition.Front {
-                cameraID = captureDevice.localizedName
+            if (captureDevice as AnyObject).position == AVCaptureDevicePosition.front {
+                cameraID = (captureDevice as AnyObject).localizedName
             }
         }
         
         self.videoCapturer = RTCVideoCapturer(deviceName: cameraID)
-        self.videoSource = self.peerConnectionFactory.videoSourceWithCapturer(
-            self.videoCapturer,
+        self.videoSource = self.peerConnectionFactory.videoSource(
+            with: self.videoCapturer,
             constraints: RTCMediaConstraints()
         )
     
         self.localVideoTrack = self.peerConnectionFactory
-            .videoTrackWithID("ARDAMSv0", source: self.videoSource)
+            .videoTrack(withID: "ARDAMSv0", source: self.videoSource)
     }
     
-    func initLocalVideoTrack(camera: String) {
+    func initLocalVideoTrack(_ camera: String) {
         NSLog("PhoneRTC: initLocalVideoTrack(camera: String) invoked")
         var cameraID: String?
-        for captureDevice in AVCaptureDevice.devicesWithMediaType(AVMediaTypeVideo) {
+        for captureDevice in AVCaptureDevice.devices(withMediaType: AVMediaTypeVideo) {
             // TODO: Make this camera option configurable
-            if captureDevice.position == AVCaptureDevicePosition.Front {
+            if (captureDevice as AnyObject).position == AVCaptureDevicePosition.front {
                 if camera == "Front"{
-                    cameraID = captureDevice.localizedName
+                    cameraID = (captureDevice as AnyObject).localizedName
                 }
             }
-            if captureDevice.position == AVCaptureDevicePosition.Back {
+            if (captureDevice as AnyObject).position == AVCaptureDevicePosition.back {
                 if camera == "Back"{
-                    cameraID = captureDevice.localizedName
+                    cameraID = (captureDevice as AnyObject).localizedName
                 }
             }
         }
         
         self.videoCapturer = RTCVideoCapturer(deviceName: cameraID)
-        self.videoSource = self.peerConnectionFactory.videoSourceWithCapturer(
-            self.videoCapturer,
+        self.videoSource = self.peerConnectionFactory.videoSource(
+            with: self.videoCapturer,
             constraints: RTCMediaConstraints()
         )
         
         self.localVideoTrack = self.peerConnectionFactory
-            .videoTrackWithID("ARDAMSv0", source: self.videoSource)
+            .videoTrack(withID: "ARDAMSv0", source: self.videoSource)
     }
     
-    func addRemoteVideoTrack(videoTrack: RTCVideoTrack) {
+    func addRemoteVideoTrack(_ videoTrack: RTCVideoTrack) {
         if self.videoConfig == nil {
             return
         }
@@ -260,24 +260,24 @@ class PhoneRTCPlugin : CDVPlugin {
         // resized and re-positioned in refreshVideoContainer
         let videoView = createVideoView()
         
-        videoTrack.addRenderer(videoView)
+        videoTrack.add(videoView)
         self.remoteVideoViews.append(VideoTrackViewPair(videoView: videoView, videoTrack: videoTrack))
         
         refreshVideoContainer()
         
         if self.localVideoView != nil {
-            self.webView!.bringSubviewToFront(self.localVideoView!)
+            self.webView!.bringSubview(toFront: self.localVideoView!)
         }
     }
     
-    func removeRemoteVideoTrack(videoTrack: RTCVideoTrack) {
-        dispatch_async(dispatch_get_main_queue()) {
-            for var i = 0; i < self.remoteVideoViews.count; i++ {
+    func removeRemoteVideoTrack(_ videoTrack: RTCVideoTrack) {
+        DispatchQueue.main.async {
+            for i in 0 ..< self.remoteVideoViews.count {
                 let pair = self.remoteVideoViews[i]
                 if pair.videoTrack == videoTrack {
-                    pair.videoView.hidden = true
+                    pair.videoView.isHidden = true
                     pair.videoView.removeFromSuperview()
-                    self.remoteVideoViews.removeAtIndex(i)
+                    self.remoteVideoViews.remove(at: i)
                     self.refreshVideoContainer()
                     return
                 }
@@ -305,20 +305,27 @@ class PhoneRTCPlugin : CDVPlugin {
       
         var videoViewIndex = 0
         
-        for var row = 0; row < rows && videoViewIndex < n; row++ {
+        for row in 0 ..< rows {
+            if (videoViewIndex >= n) {
+                continue;
+            }
             var x = getCenter(row < row - 1 || n % rows == 0 ?
                                 videosInRow : n - (min(n, videoViewIndex + videosInRow) - 1),
                 videoSize: videoSize,
                 containerSize: self.videoConfig!.container.width)
                     + self.videoConfig!.container.x
             
-            for var video = 0; video < videosInRow && videoViewIndex < n; video++ {
-                let pair = self.remoteVideoViews[videoViewIndex++]
-                pair.videoView.frame = CGRectMake(
-                    CGFloat(x),
-                    CGFloat(y),
-                    CGFloat(videoSize),
-                    CGFloat(videoSize)
+            for video in 0 ..< videosInRow {
+                if (videoViewIndex >= n) {
+                    continue;
+                }
+                let pair = self.remoteVideoViews[videoViewIndex]
+                videoViewIndex += 1
+                pair.videoView.frame = CGRect(
+                    x: CGFloat(x),
+                    y: CGFloat(y),
+                    width: CGFloat(videoSize),
+                    height: CGFloat(videoSize)
                 )
 
                 x += Int(videoSize)
@@ -328,17 +335,17 @@ class PhoneRTCPlugin : CDVPlugin {
         }
     }
     
-    func getCenter(videoCount: Int, videoSize: Int, containerSize: Int) -> Int {
+    func getCenter(_ videoCount: Int, videoSize: Int, containerSize: Int) -> Int {
         return lroundf(Float(containerSize - videoSize * videoCount) / 2.0)
     }
     
-    func onSessionDisconnect(sessionKey: String) {
-        self.sessions.removeValueForKey(sessionKey)
+    func onSessionDisconnect(_ sessionKey: String) {
+        self.sessions.removeValue(forKey: sessionKey)
         
         if self.sessions.count == 0 {
-            dispatch_sync(dispatch_get_main_queue()) {
+            DispatchQueue.main.sync {
                 if self.localVideoView != nil {
-                    self.localVideoView!.hidden = true
+                    self.localVideoView!.isHidden = true
                     self.localVideoView!.removeFromSuperview()
                 
                     self.localVideoView = nil
