@@ -64,7 +64,7 @@ class PhoneRTCPlugin : CDVPlugin {
     func renegotiate(_ command: CDVInvokedUrlCommand) {
         let args: AnyObject = command.argument(at: 0) as AnyObject
         if let sessionKey = args.object(forKey: "sessionKey") as? String {
-            if let config: AnyObject = args.object(forKey: "config") {
+            if let config: AnyObject = args.object(forKey: "config") as? AnyObject {
                 DispatchQueue.main.async {
                     if let session = self.sessions[sessionKey] {
                         session.config = SessionConfig(data: config)
