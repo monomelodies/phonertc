@@ -1,0 +1,19 @@
+{
+  "name": "phonertc",
+  "version": "1.0.0",
+  "description": "<img src=\"http://phonertc.io/images/logo_black.png\" width=\"400\">",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/monomelodies/phonertc.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/monomelodies/phonertc/issues"
+  },
+  "homepage": "https://github.com/monomelodies/phonertc#readme"
+}
