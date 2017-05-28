@@ -7,21 +7,21 @@ class PCObserver : NSObject, RTCPeerConnectionDelegate {
         self.session = session
     }
     
-    func peerConnection(peerConnection: RTCPeerConnection!,
+    func peerConnection(_ peerConnection: RTCPeerConnection!,
         addedStream stream: RTCMediaStream!) {
         print("PCO onAddStream.")
             
-        dispatch_async(dispatch_get_main_queue()) {
+        DispatchQueue.main.async {
             if stream.videoTracks.count > 0 {
                 self.session.addVideoTrack(stream.videoTracks[0] as! RTCVideoTrack)
             }
         }
         
         self.session.sendMessage(
-            "{\"type\": \"__answered\"}".dataUsingEncoding(NSUTF8StringEncoding)!)
+            "{\"type\": \"__answered\"}".data(using: String.Encoding.utf8)!)
     }
     
-    func peerConnection(peerConnection: RTCPeerConnection!,
+    func peerConnection(_ peerConnection: RTCPeerConnection!,
         removedStream stream: RTCMediaStream!) {
         print("PCO onRemoveStream.")
         /*
@@ -32,18 +32,18 @@ class PCObserver : NSObject, RTCPeerConnectionDelegate {
         }*/
     }
     
-    func peerConnection(peerConnection: RTCPeerConnection!,
+    func peerConnection(_ peerConnection: RTCPeerConnection!,
         iceGatheringChanged newState: RTCICEGatheringState) {
         print("PCO onIceGatheringChange. \(newState)")
         
     }
     
-    func peerConnection(peerConnection: RTCPeerConnection!,
+    func peerConnection(_ peerConnection: RTCPeerConnection!,
         iceConnectionChanged newState: RTCICEConnectionState) {
         print("PCO onIceConnectionChange. \(newState)")
     }
     
-    func peerConnection(peerConnection: RTCPeerConnection!,
+    func peerConnection(_ peerConnection: RTCPeerConnection!,
         gotICECandidate candidate: RTCICECandidate!) {
         print("PCO onICECandidate.\n  Mid[\(candidate.sdpMid)] Index[\(candidate.sdpMLineIndex)] Sdp[\(candidate.sdp)]")
             
@@ -56,10 +56,10 @@ class PCObserver : NSObject, RTCPeerConnectionDelegate {
             "candidate": candidate.sdp
         ]
             
-        let data: NSData?
+        let data: Data?
         do {
-            data = try NSJSONSerialization.dataWithJSONObject(json,
-                        options: NSJSONWritingOptions())
+            data = try JSONSerialization.data(withJSONObject: json,
+                        options: JSONSerialization.WritingOptions())
         } catch let error as NSError {
             jsonError = error
             data = nil
@@ -68,21 +68,21 @@ class PCObserver : NSObject, RTCPeerConnectionDelegate {
         self.session.sendMessage(data!)
     }
     
-    func peerConnection(peerConnection: RTCPeerConnection!,
+    func peerConnection(_ peerConnection: RTCPeerConnection!,
         signalingStateChanged stateChanged: RTCSignalingState) {
         print("PCO onSignalingStateChange: \(stateChanged)")
     }
     
-    func peerConnection(peerConnection: RTCPeerConnection!,
-        didOpenDataChannel dataChannel: RTCDataChannel!) {
+    func peerConnection(_ peerConnection: RTCPeerConnection!,
+        didOpen dataChannel: RTCDataChannel!) {
         print("PCO didOpenDataChannel.")
     }
     
-    func peerConnectionOnError(peerConnection: RTCPeerConnection!) {
+    func peerConnectionOnError(_ peerConnection: RTCPeerConnection!) {
         print("PCO onError.")
     }
     
-    func peerConnectionOnRenegotiationNeeded(peerConnection: RTCPeerConnection!) {
+    func peerConnection(onRenegotiationNeeded peerConnection: RTCPeerConnection!) {
         print("PCO onRenegotiationNeeded.")
         // TODO: Handle this
     }
