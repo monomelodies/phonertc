@@ -102,7 +102,7 @@ class Session {
     func receiveMessage(_ message: String) {
         // Parse the incoming JSON message.
         var error : NSError?
-        let data : AnyObject?
+        let data : Any?
         do {
             data = try JSONSerialization.jsonObject(
                         with: message.data(using: String.Encoding.utf8)!,
@@ -111,16 +111,16 @@ class Session {
             error = error1
             data = nil
         }
-        if let object: AnyObject = data {
+        if let object: AnyObject = data as AnyObject {
             // Log the message to console.
             print("Received Message: \(object)")
             // If the message has a type try to handle it.
             if let type = object.object(forKey: "type") as? String {
                 switch type {
                 case "candidate":
-                    let mid: String = data?.object(forKey: "id") as! NSString as String
-                    let sdpLineIndex: Int = (data?.object(forKey: "label") as! NSNumber).intValue
-                    let sdp: String = data?.object(forKey: "candidate") as! NSString as String
+                    let mid: String = (data as AnyObject).object(forKey: "id") as! NSString as String
+                    let sdpLineIndex: Int = ((data as AnyObject).object(forKey: "label") as! NSNumber).intValue
+                    let sdp: String = (data as AnyObject).object(forKey: "candidate") as! NSString as String
                     
                     let candidate = RTCICECandidate(
                         mid: mid,
@@ -163,7 +163,7 @@ class Session {
         
         if self.peerConnection != nil {
             if sendByeMessage {
-                let json: AnyObject = [
+                let json: Any = [
                     "type": "bye"
                 ]
             
@@ -178,7 +178,7 @@ class Session {
             self.queuedRemoteCandidates = nil
         }
         
-        let json: AnyObject = [
+        let json: Any = [
             "type": "__disconnected"
         ]
         
@@ -246,7 +246,8 @@ class Session {
         origPartIndex += 1
         newMLine.append(isac16kRtpMap!)
         
-        for ; origPartIndex < origMLineParts.count; origPartIndex += 1 {
+        var loopStart = origPartIndex;
+        for origPartIndex in loopStart ..< origMLineParts.count {
             if isac16kRtpMap != origMLineParts[origPartIndex] {
                 newMLine.append(origMLineParts[origPartIndex])
             }
