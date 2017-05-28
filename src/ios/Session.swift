@@ -209,9 +209,10 @@ class Session {
             pattern: "^a=rtpmap:(\\d+) ISAC/16000[\r]?$",
             options: NSRegularExpression.Options())
         
-        for var i = 0;
-            (i < lines.count) && (mLineIndex == -1 || isac16kRtpMap == nil);
-            i += 1 {
+        for i in 0 ..< lines.count {
+            if (mLineIndex == -1 || isac16kRtpMap == nil) {
+                continue;
+            }
             let line = lines[i]
             if line.hasPrefix("m=audio ") {
                 mLineIndex = i
@@ -237,9 +238,12 @@ class Session {
         var origPartIndex = 0;
         
         // Format is: m=<media> <port> <proto> <fmt> ...
-        newMLine.append(origMLineParts[origPartIndex++])
-        newMLine.append(origMLineParts[origPartIndex++])
-        newMLine.append(origMLineParts[origPartIndex++])
+        newMLine.append(origMLineParts[origPartIndex])
+        origPartIndex += 1
+        newMLine.append(origMLineParts[origPartIndex])
+        origPartIndex += 1
+        newMLine.append(origMLineParts[origPartIndex])
+        origPartIndex += 1
         newMLine.append(isac16kRtpMap!)
         
         for ; origPartIndex < origMLineParts.count; origPartIndex += 1 {
