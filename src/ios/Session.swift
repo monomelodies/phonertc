@@ -44,19 +44,19 @@ class Session {
         // create a list of ICE servers
         var iceServers: [RTCICEServer] = []
         iceServers.append(RTCICEServer(
-            URI: NSURL(string: "stun:stun.l.google.com:19302"),
+            uri: URL(string: "stun:stun.l.google.com:19302"),
             username: "",
             password: ""))
         
         iceServers.append(RTCICEServer(
-            URI: NSURL(string: self.config.turn.host),
+            uri: URL(string: self.config.turn.host),
             username: self.config.turn.username,
             password: self.config.turn.password))
         
         // initialize a PeerConnection
         self.pcObserver = PCObserver(session: self)
         self.peerConnection =
-            peerConnectionFactory.peerConnectionWithICEServers(iceServers,
+            peerConnectionFactory.peerConnection(withICEServers: iceServers,
                 constraints: self.constraints,
                 delegate: self.pcObserver)
         
@@ -65,18 +65,18 @@ class Session {
         
         // create offer if initiator
         if self.config.isInitiator {
-            self.peerConnection.createOfferWithDelegate(SessionDescriptionDelegate(session: self),
+            self.peerConnection.createOffer(with: SessionDescriptionDelegate(session: self),
                 constraints: constraints)
         }
     }
     
     func createOrUpdateStream() {
         if self.stream != nil {
-            self.peerConnection.removeStream(self.stream)
+            self.peerConnection.remove(self.stream)
             self.stream = nil
         }
         
-        self.stream = peerConnectionFactory.mediaStreamWithLabel("ARDAMS")
+        self.stream = peerConnectionFactory.mediaStream(withLabel: "ARDAMS")
         
         if self.config.streams.audio {
             // init local audio track if needed
@@ -96,17 +96,17 @@ class Session {
             self.stream!.addVideoTrack(self.plugin.localVideoTrack!)
         }
         
-        self.peerConnection.addStream(self.stream)
+        self.peerConnection.add(self.stream)
     }
     
-    func receiveMessage(message: String) {
+    func receiveMessage(_ message: String) {
         // Parse the incoming JSON message.
         var error : NSError?
         let data : AnyObject?
         do {
-            data = try NSJSONSerialization.JSONObjectWithData(
-                        message.dataUsingEncoding(NSUTF8StringEncoding)!,
-                        options: NSJSONReadingOptions())
+            data = try JSONSerialization.jsonObject(
+                        with: message.data(using: String.Encoding.utf8)!,
+                        options: JSONSerialization.ReadingOptions())
         } catch let error1 as NSError {
             error = error1
             data = nil
@@ -115,12 +115,12 @@ class Session {
             // Log the message to console.
             print("Received Message: \(object)")
             // If the message has a type try to handle it.
-            if let type = object.objectForKey("type") as? String {
+            if let type = object.object(forKey: "type") as? String {
                 switch type {
                 case "candidate":
-                    let mid: String = data?.objectForKey("id") as! NSString as String
-                    let sdpLineIndex: Int = (data?.objectForKey("label") as! NSNumber).integerValue
-                    let sdp: String = data?.objectForKey("candidate") as! NSString as String
+                    let mid: String = data?.object(forKey: "id") as! NSString as String
+                    let sdpLineIndex: Int = (data?.object(forKey: "label") as! NSNumber).intValue
+                    let sdp: String = data?.object(forKey: "candidate") as! NSString as String
                     
                     let candidate = RTCICECandidate(
                         mid: mid,
@@ -129,15 +129,15 @@ class Session {
                     )
                     
                     if self.queuedRemoteCandidates != nil {
-                        self.queuedRemoteCandidates?.append(candidate)
+                        self.queuedRemoteCandidates?.append(candidate!)
                     } else {
-                        self.peerConnection.addICECandidate(candidate)
+                        self.peerConnection.add(candidate)
                     }
                     
                     case "offer", "answer":
-                        if let sdpString = object.objectForKey("sdp") as? String {
+                        if let sdpString = object.object(forKey: "sdp") as? String {
                             let sdp = RTCSessionDescription(type: type, sdp: self.preferISAC(sdpString))
-                            self.peerConnection.setRemoteDescriptionWithDelegate(SessionDescriptionDelegate(session: self),
+                            self.peerConnection.setRemoteDescriptionWith(SessionDescriptionDelegate(session: self),
                                                                                  sessionDescription: sdp)
                         }
                     case "bye":
@@ -156,7 +156,7 @@ class Session {
         }
     }
 
-    func disconnect(sendByeMessage: Bool) {
+    func disconnect(_ sendByeMessage: Bool) {
         if self.videoTrack != nil {
             self.removeVideoTrack(self.videoTrack!)
         }
@@ -167,8 +167,8 @@ class Session {
                     "type": "bye"
                 ]
             
-                let data = try? NSJSONSerialization.dataWithJSONObject(json,
-                    options: NSJSONWritingOptions())
+                let data = try? JSONSerialization.data(withJSONObject: json,
+                    options: JSONSerialization.WritingOptions())
             
                 self.sendMessage(data!)
             }
@@ -182,36 +182,36 @@ class Session {
             "type": "__disconnected"
         ]
         
-        let data = try? NSJSONSerialization.dataWithJSONObject(json,
-            options: NSJSONWritingOptions())
+        let data = try? JSONSerialization.data(withJSONObject: json,
+            options: JSONSerialization.WritingOptions())
         
         self.sendMessage(data!)
         
         self.plugin.onSessionDisconnect(self.sessionKey)
     }
     
-    func addVideoTrack(videoTrack: RTCVideoTrack) {
+    func addVideoTrack(_ videoTrack: RTCVideoTrack) {
         self.videoTrack = videoTrack
         self.plugin.addRemoteVideoTrack(videoTrack)
     }
     
-    func removeVideoTrack(videoTrack: RTCVideoTrack) {
+    func removeVideoTrack(_ videoTrack: RTCVideoTrack) {
         self.plugin.removeRemoteVideoTrack(videoTrack)
     }
     
-    func preferISAC(sdpDescription: String) -> String {
+    func preferISAC(_ sdpDescription: String) -> String {
         var mLineIndex = -1
         var isac16kRtpMap: String?
         
-        let origSDP = sdpDescription.stringByReplacingOccurrencesOfString("\r\n", withString: "\n")
-        var lines = origSDP.componentsSeparatedByString("\n")
+        let origSDP = sdpDescription.replacingOccurrences(of: "\r\n", with: "\n")
+        var lines = origSDP.components(separatedBy: "\n")
         let isac16kRegex = try? NSRegularExpression(
             pattern: "^a=rtpmap:(\\d+) ISAC/16000[\r]?$",
-            options: NSRegularExpressionOptions())
+            options: NSRegularExpression.Options())
         
         for var i = 0;
             (i < lines.count) && (mLineIndex == -1 || isac16kRtpMap == nil);
-            ++i {
+            i += 1 {
             let line = lines[i]
             if line.hasPrefix("m=audio ") {
                 mLineIndex = i
@@ -231,7 +231,7 @@ class Session {
             return origSDP
         }
         
-        let origMLineParts = lines[mLineIndex].componentsSeparatedByString(" ")
+        let origMLineParts = lines[mLineIndex].components(separatedBy: " ")
 
         var newMLine: [String] = []
         var origPartIndex = 0;
@@ -242,31 +242,31 @@ class Session {
         newMLine.append(origMLineParts[origPartIndex++])
         newMLine.append(isac16kRtpMap!)
         
-        for ; origPartIndex < origMLineParts.count; ++origPartIndex {
+        for ; origPartIndex < origMLineParts.count; origPartIndex += 1 {
             if isac16kRtpMap != origMLineParts[origPartIndex] {
                 newMLine.append(origMLineParts[origPartIndex])
             }
         }
         
-        lines[mLineIndex] = newMLine.joinWithSeparator(" ")
-        return lines.joinWithSeparator("\r\n")
+        lines[mLineIndex] = newMLine.joined(separator: " ")
+        return lines.joined(separator: "\r\n")
     }
     
-    func firstMatch(pattern: NSRegularExpression, string: String) -> String? {
+    func firstMatch(_ pattern: NSRegularExpression, string: String) -> String? {
         let nsString = string as NSString
         
-        let result = pattern.firstMatchInString(string,
-            options: NSMatchingOptions(),
+        let result = pattern.firstMatch(in: string,
+            options: NSRegularExpression.MatchingOptions(),
             range: NSMakeRange(0, nsString.length))
         
         if result == nil {
             return nil
         }
         
-        return nsString.substringWithRange(result!.rangeAtIndex(1))
+        return nsString.substring(with: result!.rangeAt(1))
     }
     
-    func sendMessage(message: NSData) {
+    func sendMessage(_ message: Data) {
         self.plugin.sendMessage(self.callbackId, message: message)
     }
 }
