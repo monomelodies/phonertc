@@ -8,7 +8,7 @@ class SessionDescriptionDelegate : UIResponder, RTCSessionDescriptionDelegate {
     }
     
     func peerConnection(_ peerConnection: RTCPeerConnection!,
-        didCreateSessionDescription originalSdp: RTCSessionDescription!, error: NSError!) {
+        didCreateSessionDescription originalSdp: RTCSessionDescription!, error: Error!) {
         if error != nil {
             print("SDP OnFailure: \(error)")
             return
@@ -45,7 +45,7 @@ class SessionDescriptionDelegate : UIResponder, RTCSessionDescriptionDelegate {
     }
     
     func peerConnection(_ peerConnection: RTCPeerConnection!,
-        didSetSessionDescriptionWithError error: NSError!) {
+        didSetSessionDescriptionWithError error: Error!) {
         if error != nil {
             print("SDP OnFailure: \(error)")
             return
