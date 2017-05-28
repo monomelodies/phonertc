@@ -8,17 +8,17 @@ class SessionConfig {
     init(data: AnyObject) {
         self.isInitiator = data.object(forKey: "isInitiator") as! Bool
         
-        let turnObject: AnyObject = data.object(forKey: "turn")!
+        let turnObject: Any = data.object(forKey: "turn")!
         self.turn = TurnConfig(
-            host: turnObject.object(forKey: "host") as! String,
-            username: turnObject.object(forKey: "username") as! String,
-            password: turnObject.object(forKey: "password") as! String
+            host: (turnObject as AnyObject).object(forKey: "host") as! String,
+            username: (turnObject as AnyObject).object(forKey: "username") as! String,
+            password: (turnObject as AnyObject).object(forKey: "password") as! String
         )
         
-        let streamsObject: AnyObject = data.object(forKey: "streams")!
+        let streamsObject: Any = data.object(forKey: "streams")!
         self.streams = StreamsConfig(
-            audio: streamsObject.object(forKey: "audio") as! Bool,
-            video: streamsObject.object(forKey: "video") as! Bool
+            audio: (streamsObject as AnyObject).object(forKey: "audio") as! Bool,
+            video: (streamsObject as AnyObject).object(forKey: "video") as! Bool
         )
     }
 }
@@ -39,13 +39,13 @@ class VideoConfig {
     var local: VideoLayoutParams?
     
     init(data: AnyObject) {
-        let containerParams: AnyObject = data.object(forKey: "containerParams")!
-        let localParams: AnyObject? = data.object(forKey: "local")
+        let containerParams: Any = data.object(forKey: "containerParams")!
+        let localParams: Any? = data.object(forKey: "local")
         
-        self.container = VideoLayoutParams(data: containerParams)
+        self.container = VideoLayoutParams(data: containerParams as AnyObject)
         
         if localParams != nil {
-            self.local = VideoLayoutParams(data: localParams!)
+            self.local = VideoLayoutParams(data: localParams! as AnyObject)
         }
     }
 }
