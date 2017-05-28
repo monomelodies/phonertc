@@ -6,19 +6,19 @@ class SessionConfig {
     var streams: StreamsConfig
     
     init(data: AnyObject) {
-        self.isInitiator = data.objectForKey("isInitiator") as! Bool
+        self.isInitiator = data.object(forKey: "isInitiator") as! Bool
         
-        let turnObject: AnyObject = data.objectForKey("turn")!
+        let turnObject: AnyObject = data.object(forKey: "turn")!
         self.turn = TurnConfig(
-            host: turnObject.objectForKey("host") as! String,
-            username: turnObject.objectForKey("username") as! String,
-            password: turnObject.objectForKey("password") as! String
+            host: turnObject.object(forKey: "host") as! String,
+            username: turnObject.object(forKey: "username") as! String,
+            password: turnObject.object(forKey: "password") as! String
         )
         
-        let streamsObject: AnyObject = data.objectForKey("streams")!
+        let streamsObject: AnyObject = data.object(forKey: "streams")!
         self.streams = StreamsConfig(
-            audio: streamsObject.objectForKey("audio") as! Bool,
-            video: streamsObject.objectForKey("video") as! Bool
+            audio: streamsObject.object(forKey: "audio") as! Bool,
+            video: streamsObject.object(forKey: "video") as! Bool
         )
     }
 }
@@ -39,8 +39,8 @@ class VideoConfig {
     var local: VideoLayoutParams?
     
     init(data: AnyObject) {
-        let containerParams: AnyObject = data.objectForKey("containerParams")!
-        let localParams: AnyObject? = data.objectForKey("local")
+        let containerParams: AnyObject = data.object(forKey: "containerParams")!
+        let localParams: AnyObject? = data.object(forKey: "local")
         
         self.container = VideoLayoutParams(data: containerParams)
         
@@ -61,11 +61,11 @@ class VideoLayoutParams {
     }
     
     init(data: AnyObject) {
-        let position: [AnyObject] = data.objectForKey("position")! as! [AnyObject]
+        let position: [AnyObject] = data.object(forKey: "position")! as! [AnyObject]
         self.x = position[0] as! Int
         self.y = position[1] as! Int
         
-        let size: [AnyObject] = data.objectForKey("size")! as! [AnyObject]
+        let size: [AnyObject] = data.object(forKey: "size")! as! [AnyObject]
         self.width = size[0] as! Int
         self.height = size[1] as! Int
     }
