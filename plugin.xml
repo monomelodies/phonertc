@@ -120,7 +120,7 @@ In order to install PhoneRTC on iOS, please follow these steps:
 			<uses-permission android:name="android.permission.RECORD_AUDIO" />
 			<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
 			<uses-permission android:name="android.permission.CAMERA" />
-        </edit-config>
+        </config-file>
 
         <source-file src="libs/android/libjingle_peerconnection.jar" target-dir="libs"/>
 		<source-file src="libs/android/armeabi-v7a/libjingle_peerconnection_so.so" target-dir="libs/armeabi-v7a"/>
